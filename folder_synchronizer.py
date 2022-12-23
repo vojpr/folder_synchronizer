@@ -15,10 +15,10 @@ class FolderSynchronizer():
         source_folder (str): Source folder path
         replica_folder (str): Replica folder path
         sync_interval (int): Synchronization interval in whole minutes
-        log_file (str): Log file path
+        log_folder (str): Path to the folder, where log file is/will be created
     """
     
-    def __init__(self, source_folder: str, replica_folder: str, sync_interval: int, log_file: str):
+    def __init__(self, source_folder: str, replica_folder: str, sync_interval: int, log_folder: str):
         self.source_folder = source_folder
         if not type(self.source_folder) is str:
             raise TypeError("Folder path must be a string")
@@ -37,15 +37,18 @@ class FolderSynchronizer():
         if self.sync_interval < 1:
             raise Exception("Synchronization interval must be higher than zero")
         
-        self.log_file = log_file
-        if not type(self.log_file) is str:
-            raise TypeError("File path must be a string")
-        if not os.path.isfile(self.log_file):
-            raise FileNotFoundError("No such file")
+        self.log_folder = log_folder
+        if not type(self.log_folder) is str:
+            raise TypeError("Folder path must be a string")
+        if not os.path.isdir(self.log_folder):
+            raise NotADirectoryError("No such folder")
         
         # Logging settings (handles both log file and console output)
         logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', 
-                            handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler(f'{self.log_file}', mode='a')])
+                            handlers=[
+                                logging.StreamHandler(sys.stdout), 
+                                logging.FileHandler(os.path.join(self.log_folder, "sync.log"), mode='a')
+                                ])
 
     def copy(self):
         """
