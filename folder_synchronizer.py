@@ -2,6 +2,7 @@ import os
 import shutil
 import logging
 import sys
+import threading
  
 
 class FolderSynchronizer():
@@ -11,13 +12,34 @@ class FolderSynchronizer():
     and to the console output.
     """
     
-    def __init__(self, source_folder, replica_folder, log_file_folder):
+    def __init__(self, source_folder: str, replica_folder: str, sync_interval: int, log_file: str):
         self.source_folder = source_folder
+        if not type(self.source_folder) is str:
+            raise TypeError("Folder path must be a string")
+        if not os.path.isdir(self.source_folder):
+            raise NotADirectoryError("No such folder")
+            
         self.replica_folder = replica_folder
-        self.log_file_folder = log_file_folder
+        if not type(self.replica_folder) is str:
+            raise TypeError("Folder path must be a string")
+        if not os.path.isdir(self.replica_folder):
+            raise NotADirectoryError("No such folder")
+        
+        self.sync_interval = sync_interval
+        if not type(self.sync_interval) is int:
+            raise TypeError("Synchronization interval must be an integer")
+        if self.sync_interval < 1:
+            raise Exception("Synchronization interval must be higher than zero")
+        
+        self.log_file = log_file
+        if not type(self.log_file) is str:
+            raise TypeError("File path must be a string")
+        if not os.path.isfile(self.log_file):
+            raise FileNotFoundError("No such file")
+        
         # Logging settings (handles both log file and console output)
         logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', 
-                            handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler(f'{self.log_file_folder}/app.log', mode='a')])
+                            handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler(f'{self.log_file}', mode='a')])
 
     def copy(self):
         """
@@ -61,11 +83,11 @@ class FolderSynchronizer():
             for unit in dirs + files:
                 rel_path = os.path.relpath(os.path.join(root, unit), self.replica_folder)
                 if not os.path.exists(f"{self.source_folder}/{rel_path}"):
-                    # Check if unit is folder -> create folder in replica
+                    # Check if unit is folder -> remove folder from replica
                     if os.path.isdir(f"{self.replica_folder}/{rel_path}"):
                         os.rmdir(f"{self.replica_folder}/{rel_path}")
                         logging.info(f"REMOVED Folder: {rel_path}")  
-                    # Check if unit is file -> create file in replica
+                    # Check if unit is file -> remove file from replica
                     elif os.path.isfile(f"{self.replica_folder}/{rel_path}"):
                         os.remove(f"{self.replica_folder}/{rel_path}")
                         logging.info(f"REMOVED File: {rel_path}")     
@@ -80,5 +102,8 @@ class FolderSynchronizer():
         self.copy()
         self.update()
         self.remove()
-        logging.info(f"Synchronization finished")
+        logging.info(f"Synchronization finished\n")
+        
+        # Run synchronization periodically
+        threading.Timer(self.sync_interval*60, self.run_synchronization).start()
                 
