@@ -8,8 +8,14 @@ import threading
 class FolderSynchronizer():
     """
     Synchronizes two folders: source and replica. After the synchronization content of the replica 
-    folder matches content of the source folder. Synchronization operations are logged to a log file 
-    and to the console output.
+    folder matches content of the source folder. Synchronization runs periodically. Synchronization 
+    operations are logged to a log file and to the console output.
+    
+    Positional arguments:
+        source_folder (str): Source folder path
+        replica_folder (str): Replica folder path
+        sync_interval (int): Synchronization interval in whole minutes
+        log_file (str): Log file path
     """
     
     def __init__(self, source_folder: str, replica_folder: str, sync_interval: int, log_file: str):
