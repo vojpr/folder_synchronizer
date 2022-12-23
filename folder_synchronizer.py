@@ -58,14 +58,14 @@ class FolderSynchronizer():
         for (root, dirs, files) in os.walk(self.source_folder):
             for unit in dirs + files:
                 rel_path = os.path.relpath(os.path.join(root, unit), self.source_folder)
-                if not os.path.exists(f"{self.replica_folder}/{rel_path}"):
+                if not os.path.exists(os.path.join(self.replica_folder, rel_path)):
                     # Check if unit is folder -> create folder in replica
-                    if os.path.isdir(f"{self.source_folder}/{rel_path}"):
-                        os.mkdir(f"{self.replica_folder}/{rel_path}")
+                    if os.path.isdir(os.path.join(self.source_folder, rel_path)):
+                        os.mkdir(os.path.join(self.replica_folder, rel_path))
                         logging.info(f"CREATED Folder: {rel_path}") 
                     # Check if unit is file -> create file in replica
-                    elif os.path.isfile(f"{self.source_folder}/{rel_path}"):
-                        shutil.copy2(f"{self.source_folder}/{rel_path}", f"{self.replica_folder}/{rel_path}")
+                    elif os.path.isfile(os.path.join(self.source_folder, rel_path)):
+                        shutil.copy2(os.path.join(self.source_folder, rel_path), os.path.join(self.replica_folder, rel_path))
                         logging.info(f"CREATED File: {rel_path}")  
     
     def update(self):
@@ -76,11 +76,11 @@ class FolderSynchronizer():
         for (root, dirs, files) in os.walk(self.source_folder):
             for unit in dirs + files:
                 rel_path = os.path.relpath(os.path.join(root, unit), self.source_folder)  
-                if os.path.isfile(f"{self.source_folder}/{rel_path}"):
-                    source_file_modif_time = os.path.getmtime(f"{self.source_folder}/{rel_path}")
-                    replica_file_modif_time = os.path.getmtime(f"{self.replica_folder}/{rel_path}")
+                if os.path.isfile(os.path.join(self.source_folder, rel_path)):
+                    source_file_modif_time = os.path.getmtime(os.path.join(self.source_folder, rel_path))
+                    replica_file_modif_time = os.path.getmtime(os.path.join(self.replica_folder, rel_path))
                     if source_file_modif_time != replica_file_modif_time:
-                        shutil.copy2(f"{self.source_folder}/{rel_path}", f"{self.replica_folder}/{rel_path}")
+                        shutil.copy2(os.path.join(self.source_folder, rel_path), os.path.join(self.replica_folder, rel_path))
                         logging.info(f"UPDATED File: {rel_path}")  
                     
     def remove(self):
@@ -91,14 +91,14 @@ class FolderSynchronizer():
         for (root, dirs, files) in os.walk(self.replica_folder):
             for unit in dirs + files:
                 rel_path = os.path.relpath(os.path.join(root, unit), self.replica_folder)
-                if not os.path.exists(f"{self.source_folder}/{rel_path}"):
+                if not os.path.exists(os.path.join(self.source_folder, rel_path)):
                     # Check if unit is folder -> remove folder from replica
-                    if os.path.isdir(f"{self.replica_folder}/{rel_path}"):
-                        os.rmdir(f"{self.replica_folder}/{rel_path}")
+                    if os.path.isdir(os.path.join(self.replica_folder, rel_path)):
+                        os.rmdir(os.path.join(self.replica_folder, rel_path))
                         logging.info(f"REMOVED Folder: {rel_path}")  
                     # Check if unit is file -> remove file from replica
-                    elif os.path.isfile(f"{self.replica_folder}/{rel_path}"):
-                        os.remove(f"{self.replica_folder}/{rel_path}")
+                    elif os.path.isfile(os.path.join(self.replica_folder, rel_path)):
+                        os.remove(os.path.join(self.replica_folder, rel_path))
                         logging.info(f"REMOVED File: {rel_path}")     
           
     def run_synchronization(self):
