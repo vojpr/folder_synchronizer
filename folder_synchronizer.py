@@ -88,7 +88,7 @@ class FolderSynchronizer():
         Checks which files or folders from the replica folder are missing in the source 
         folder and then removes them from the replica folder.
         """
-        for (root, dirs, files) in os.walk(self.replica_folder):
+        for (root, dirs, files) in os.walk(self.replica_folder, topdown=False):
             for unit in dirs + files:
                 rel_path = os.path.relpath(os.path.join(root, unit), self.replica_folder)
                 if not os.path.exists(os.path.join(self.source_folder, rel_path)):
