@@ -50,68 +50,45 @@ class FolderSynchronizer():
                                 logging.FileHandler(os.path.join(self.log_folder, "sync.log"), mode='a')
                                 ])
 
-    def copy(self):
+    def operation_method(self, operation: str, folder: str, topdown: bool):
         """
-        Checks which files or folders from the source folder are missing in the replica 
-        folder and then creates their copies in the replica folder.
+        Method runs one of two operations ("copy_and_update" or "remove") based on operation specified in a positional argument.
         """
-        for (root, dirs, files) in os.walk(self.source_folder):
+        for (root, dirs, files) in os.walk(folder, topdown=topdown):
             for unit in dirs + files:
-                rel_path = os.path.relpath(os.path.join(root, unit), self.source_folder)
-                if not os.path.exists(os.path.join(self.replica_folder, rel_path)):
-                    # Check if unit is folder -> create folder in replica
-                    if os.path.isdir(os.path.join(self.source_folder, rel_path)):
-                        os.mkdir(os.path.join(self.replica_folder, rel_path))
-                        logging.info(f"CREATED Folder: {rel_path}") 
-                    # Check if unit is file -> create file in replica
+                rel_path = os.path.relpath(os.path.join(root, unit), folder)
+                if operation == "copy_and_update":
+                    if not os.path.exists(os.path.join(self.replica_folder, rel_path)):
+                        if os.path.isdir(os.path.join(self.source_folder, rel_path)):
+                            os.mkdir(os.path.join(self.replica_folder, rel_path))
+                            logging.info(f"CREATED Folder: {rel_path}") 
+                        elif os.path.isfile(os.path.join(self.source_folder, rel_path)):
+                            shutil.copy2(os.path.join(self.source_folder, rel_path), os.path.join(self.replica_folder, rel_path))
+                            logging.info(f"CREATED File: {rel_path}")  
                     elif os.path.isfile(os.path.join(self.source_folder, rel_path)):
-                        shutil.copy2(os.path.join(self.source_folder, rel_path), os.path.join(self.replica_folder, rel_path))
-                        logging.info(f"CREATED File: {rel_path}")  
-    
-    def update(self):
-        """
-        Compares the modification time of files in the source folder and the replica folder
-        and updates files in the replica folder that have different modification time.
-        """
-        for (root, dirs, files) in os.walk(self.source_folder):
-            for unit in dirs + files:
-                rel_path = os.path.relpath(os.path.join(root, unit), self.source_folder)  
-                if os.path.isfile(os.path.join(self.source_folder, rel_path)):
-                    source_file_modif_time = os.path.getmtime(os.path.join(self.source_folder, rel_path))
-                    replica_file_modif_time = os.path.getmtime(os.path.join(self.replica_folder, rel_path))
-                    if source_file_modif_time != replica_file_modif_time:
-                        shutil.copy2(os.path.join(self.source_folder, rel_path), os.path.join(self.replica_folder, rel_path))
-                        logging.info(f"UPDATED File: {rel_path}")  
-                    
-    def remove(self):
-        """
-        Checks which files or folders from the replica folder are missing in the source 
-        folder and then removes them from the replica folder.
-        """
-        for (root, dirs, files) in os.walk(self.replica_folder, topdown=False):
-            for unit in dirs + files:
-                rel_path = os.path.relpath(os.path.join(root, unit), self.replica_folder)
-                if not os.path.exists(os.path.join(self.source_folder, rel_path)):
-                    # Check if unit is folder -> remove folder from replica
+                        source_file_modif_time = os.path.getmtime(os.path.join(self.source_folder, rel_path))
+                        replica_file_modif_time = os.path.getmtime(os.path.join(self.replica_folder, rel_path))
+                        if source_file_modif_time != replica_file_modif_time:
+                            shutil.copy2(os.path.join(self.source_folder, rel_path), os.path.join(self.replica_folder, rel_path))
+                            logging.info(f"UPDATED File: {rel_path}") 
+                if operation == "remove" and not os.path.exists(os.path.join(self.source_folder, rel_path)):
                     if os.path.isdir(os.path.join(self.replica_folder, rel_path)):
                         os.rmdir(os.path.join(self.replica_folder, rel_path))
                         logging.info(f"REMOVED Folder: {rel_path}")  
-                    # Check if unit is file -> remove file from replica
                     elif os.path.isfile(os.path.join(self.replica_folder, rel_path)):
                         os.remove(os.path.join(self.replica_folder, rel_path))
-                        logging.info(f"REMOVED File: {rel_path}")     
+                        logging.info(f"REMOVED File: {rel_path}")
           
     def run_synchronization(self):
         """
         Starts synchronization process.
         """
-        logging.info(f"Synchronization started")
+        logging.info("Synchronization started")
         logging.info(f"Source folder: {self.source_folder}")
         logging.info(f"Replica folder: {self.replica_folder}") 
-        self.copy()
-        self.update()
-        self.remove()
-        logging.info(f"Synchronization finished\n")
+        self.operation_method("copy_and_update", self.source_folder, True)
+        self.operation_method("remove", self.replica_folder, False)
+        logging.info("Synchronization finished\n")
         
         # Run synchronization periodically
         threading.Timer(self.sync_interval*60, self.run_synchronization).start()

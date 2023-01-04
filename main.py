@@ -1,6 +1,7 @@
 from folder_synchronizer import FolderSynchronizer
 import argparse
 
+
 def main():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(dest="source", type=str, help="This is the source folder path")
